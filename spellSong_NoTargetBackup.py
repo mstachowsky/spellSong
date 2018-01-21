@@ -12,17 +12,20 @@ from spells import *
 from menus import *
 from objectDefs import *
 from gamePrimitives import *
-from renderUtilities import *
-from targetting import *
 #from keys import *
+
+#color constants
+color_dark_wall = libtcod.Color(0, 0, 100)
+color_light_wall = libtcod.Color(130, 110, 50)
+color_dark_ground = libtcod.Color(50, 50, 150)
+color_light_ground = libtcod.Color(200, 180, 50) 
 
 
 #build a spell (needs to be WAY better)
 orc = spellWord('orc',buildNoun,castNoun)
 troll = spellWord('troll',buildNoun,castNoun)
 strong = spellWord('strong', buildStrong)
-banish = spellWord('banish',buildBanish,castBanish)
-wordList = [strong, banish] 
+wordList = [strong,orc] 
 orcSpell=spell()
 buildSpell(wordList,orcSpell)
 
@@ -94,7 +97,10 @@ class Object:
     def clear(self):
         #erase the character that represents this object
         libtcod.console_put_char(con, self.x, self.y, ' ', libtcod.BKGND_NONE)
+ 
+ 
 
+ 
 class BasicMonster:
     #AI for a basic monster.
     def take_turn(self):
@@ -128,8 +134,6 @@ class ConfusedMonster:
  
 def handle_keys(key,objects,player,inventory,game_state):
     global fov_recompute
-	
-    ctx=[key,mouse,map,player,objects,fov_recompute,fov_map]
     if key.vk == libtcod.KEY_ENTER and key.lalt:
         #Alt+Enter: toggle fullscreen
         libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
@@ -140,16 +144,16 @@ def handle_keys(key,objects,player,inventory,game_state):
     if game_state == 'playing':
         #movement keys
         if key.vk == libtcod.KEY_UP:
-            fov_recompute = player_move_or_attack(0, -1, player,fov_map,ctx)
+            fov_recompute = player_move_or_attack(0, -1, player,fov_map)
  
         elif key.vk == libtcod.KEY_DOWN:
-            fov_recompute = player_move_or_attack(0, 1, player,fov_map,ctx)
+            fov_recompute = player_move_or_attack(0, 1, player,fov_map)
  
         elif key.vk == libtcod.KEY_LEFT:
-            fov_recompute = player_move_or_attack(-1, 0, player,fov_map,ctx)
+            fov_recompute = player_move_or_attack(-1, 0, player,fov_map)
  
         elif key.vk == libtcod.KEY_RIGHT:
-            fov_recompute = player_move_or_attack(1, 0, player,fov_map,ctx)
+            fov_recompute = player_move_or_attack(1, 0, player,fov_map)
         else:
             #test for other keys
             key_char = chr(key.c)
@@ -180,12 +184,9 @@ def handle_keys(key,objects,player,inventory,game_state):
             if key_char == 'c' and player.fighter.battlecry==0 and player.fighter.voice>0: #battlecry
 				startBattlecry(player,game_msgs)
 			
-			#cast a spell - need to choose the spell AND make this take an action!
+			#cast a spell
             if key_char == 's':
 				player.fighter.casting = 0 #SUPER SKETCH, NEED RE-DO!!
-				targetList=monsters_in_range(BASE_CAST_RANGE,player,fov_map)
-				message('Casting!')
-				player.fighter.spellBook[player.fighter.casting].cast(player,targetList,game_msgs,ctx)
 			
 			#be quiet (don't cast)
             if key_char == 'q':
@@ -387,6 +388,104 @@ def place_objects(room):
  
             objects.append(item)
             item.send_to_back()  #items appear below other objects
+ 
+ 
+def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color):
+    #render a bar (HP, experience, etc). first calculate the width of the bar
+    bar_width = int(float(value) / maximum * total_width)
+ 
+    #render the background first
+    libtcod.console_set_default_background(panel, back_color)
+    libtcod.console_rect(panel, x, y, total_width, 1, False, libtcod.BKGND_SCREEN)
+ 
+    #now render the bar on top
+    libtcod.console_set_default_background(panel, bar_color)
+    if bar_width > 0:
+        libtcod.console_rect(panel, x, y, bar_width, 1, False, libtcod.BKGND_SCREEN)
+ 
+    #finally, some centered text with the values
+    libtcod.console_set_default_foreground(panel, libtcod.white)
+    libtcod.console_print_ex(panel, x + total_width / 2, y, libtcod.BKGND_NONE, libtcod.CENTER,
+        name + ': ' + str(value) + '/' + str(maximum))
+ 
+def get_names_under_mouse():
+    global mouse
+ 
+    #return a string with the names of all objects under the mouse
+    (x, y) = (mouse.cx, mouse.cy)
+ 
+    #create a list with the names of all objects at the mouse's coordinates and in FOV
+    names = [obj.name for obj in objects
+        if obj.x == x and obj.y == y and libtcod.map_is_in_fov(fov_map, obj.x, obj.y)]
+ 
+    names = ', '.join(names)  #join the names, separated by commas
+    return names.capitalize()
+
+def render_all():
+    global fov_map
+    global fov_recompute
+    
+    if fov_recompute:
+        #recompute FOV if needed (the player moved or something)
+        fov_recompute = False
+        libtcod.map_compute_fov(fov_map, player.x, player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO)
+ 
+        #go through all tiles, and set their background color according to the FOV
+        for y in range(MAP_HEIGHT):
+            for x in range(MAP_WIDTH):
+                visible = libtcod.map_is_in_fov(fov_map, x, y)
+                wall = map[x][y].block_sight
+                if not visible:
+                    #if it's not visible right now, the player can only see it if it's explored
+                    if map[x][y].explored:
+                        if wall:
+                            libtcod.console_set_char_background(con, x, y, color_dark_wall, libtcod.BKGND_SET)
+                        else:
+                            libtcod.console_set_char_background(con, x, y, color_dark_ground, libtcod.BKGND_SET)
+                else:
+                    #it's visible
+                    if wall:
+                        libtcod.console_set_char_background(con, x, y, color_light_wall, libtcod.BKGND_SET )
+                    else:
+                        libtcod.console_set_char_background(con, x, y, color_light_ground, libtcod.BKGND_SET )
+                    #since it's visible, explore it
+                    map[x][y].explored = True
+ 
+    #draw all objects in the list, except the player. we want it to
+    #always appear over all other objects! so it's drawn later.
+    for object in objects:
+        if object != player:
+            object.draw()
+    player.draw()
+ 
+    #blit the contents of "con" to the root console
+    libtcod.console_blit(con, 0, 0, MAP_WIDTH, MAP_HEIGHT, 0, 0, 0)
+ 
+ 
+    #prepare to render the GUI panel
+    libtcod.console_set_default_background(panel, libtcod.black)
+    libtcod.console_clear(panel)
+ 
+    #print the game messages, one line at a time
+    y = 1
+    for (line, color) in game_msgs:
+        libtcod.console_set_default_foreground(panel, color)
+        libtcod.console_print_ex(panel, MSG_X, y, libtcod.BKGND_NONE, libtcod.LEFT, line)
+        y += 1
+ 
+    #show the player's stats
+    render_bar(1, 1, BAR_WIDTH, 'HP', player.fighter.hp, player.fighter.max_hp,
+        libtcod.light_red, libtcod.darker_red)
+    render_bar(1, 3, BAR_WIDTH, 'Voice', player.fighter.voice, 10,
+        libtcod.light_red, libtcod.darker_red)
+ 
+    #display names of objects under the mouse
+    libtcod.console_set_default_foreground(panel, libtcod.light_gray)
+    libtcod.console_print_ex(panel, 1, 0, libtcod.BKGND_NONE, libtcod.LEFT, get_names_under_mouse())
+ 
+    #blit the contents of "panel" to the root console
+    libtcod.console_blit(panel, 0, 0, SCREEN_WIDTH, PANEL_HEIGHT, 0, 0, PANEL_Y)
+ 
 
 def message(new_msg, color = libtcod.white):
 		messagePrinter(new_msg,game_msgs,color)
@@ -440,7 +539,7 @@ def cast_lightning():
 def cast_fireball():
     #ask the player for a target tile to throw a fireball at
     message('Left-click a target tile for the fireball, or right-click to cancel.', libtcod.light_cyan)
-    (x, y) = target_tile(key,mouse,map,player,objects,fov_recompute,fov_map)
+    (x, y) = target_tile(key,mouse)
     if x is None: return 'cancelled'
     message('The fireball explodes, burning everything within ' + str(FIREBALL_RADIUS) + ' tiles!', libtcod.orange)
  
@@ -452,7 +551,7 @@ def cast_fireball():
 def cast_confuse():
     #ask the player for a target to confuse
     message('Left-click an enemy to confuse it, or right-click to cancel.', libtcod.light_cyan)
-    monster = target_monster(key,mouse,map,player,objects,fov_recompute,fov_map,CONFUSE_RANGE)
+    monster = target_monster(key,mouse,player,CONFUSE_RANGE)
     if monster is None: return 'cancelled'
  
     #replace the monster's AI with a "confused" one; after some turns it will restore the old AI
@@ -532,7 +631,7 @@ def play_game():
     while not libtcod.console_is_window_closed():
         #render the screen
         libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS|libtcod.EVENT_MOUSE,key,mouse)
-        render_all(mouse,map,player,objects,fov_recompute,fov_map)
+        render_all()
  
         libtcod.console_flush()
  
