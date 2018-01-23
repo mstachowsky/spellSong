@@ -2,15 +2,20 @@
 #like rectangles and tiles
 class Tile:
     #a tile of the map and its properties
-    def __init__(self, blocked, block_sight = None):
+    def __init__(self, blocked, block_sight = None,specialColor=None):
         self.blocked = blocked
- 
+		
+		#special_color lets us change the color of tiles if they are, say, doors etc.  Otherwise, the render function defaults to whatever it is
+        self.specialColor = specialColor
         #all tiles start unexplored
         self.explored = False
  
         #by default, if a tile is blocked, it also blocks sight
         if block_sight is None: block_sight = blocked
         self.block_sight = block_sight
+		
+		#whether a tile is in a room or a hallway is relevant to quests
+        self.isInRoom = False
  
 class Rect:
     #a rectangle on the map. used to characterize a room.

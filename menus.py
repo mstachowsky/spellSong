@@ -62,3 +62,9 @@ def inventory_menu(header,inventory):
     #if an item was chosen, return it
     if index is None or len(inventory) == 0: return None
     return inventory[index].item
+	
+def isItemInInventory(inventory, itemName):
+	for item in inventory:
+		if itemName == item.name:
+			return True
+	return False

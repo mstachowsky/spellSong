@@ -61,6 +61,10 @@ def render_all(mouse,map,player,objects,fov_recompute,fov_map):
                         libtcod.console_set_char_background(con, x, y, color_light_wall, libtcod.BKGND_SET )
                     else:
                         libtcod.console_set_char_background(con, x, y, color_light_ground, libtcod.BKGND_SET )
+						
+                        #now check special color
+                        if(map[x][y].specialColor is not None):
+							libtcod.console_set_char_background(con, x, y, map[x][y].specialColor, libtcod.BKGND_SET )
                     #since it's visible, explore it
                     map[x][y].explored = True
  
@@ -89,7 +93,7 @@ def render_all(mouse,map,player,objects,fov_recompute,fov_map):
     #show the player's stats
     render_bar(1, 1, BAR_WIDTH, 'HP', player.fighter.hp, player.fighter.max_hp,
         libtcod.light_red, libtcod.darker_red)
-    render_bar(1, 3, BAR_WIDTH, 'Voice', player.fighter.voice, 10,
+    render_bar(1, 3, BAR_WIDTH, 'Voice', player.fighter.voice, player.fighter.maxVoice,
         libtcod.light_red, libtcod.darker_red)
  
     #display names of objects under the mouse
