@@ -62,7 +62,6 @@ class reachLocationQuest:
 		
 		#in this cast, "data" contains only the player object
 		if data[PLAYER_INX].x == self.x and data[PLAYER_INX].y == self.y:
-			messagePrinter('Quest complete!',data[MSGS_INX])
 			return True
 		return False
 	
@@ -129,7 +128,6 @@ class obtainItemQuest():
 	#data needs to contain the inventory object
 	def isComplete(self,data):
 		if isItemInInventory(data[INVENTORY_INX],self.item.name):
-			messagePrinter('Got the item',data[MSGS_INX])
 			return True
 		return False
 	

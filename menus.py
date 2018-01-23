@@ -49,6 +49,18 @@ def menu(header, options, width):
 def msgbox(text, width=50):
     menu(text, [], width)  #use menu() as a sort of "message box"
 
+def spell_menu(header,spells):
+    #show a menu with each item of the inventory as an option
+    if len(spells) == 0:
+        options = ['You don\'t know any spells']
+    else:
+        options = [spl.name for spl in spells]
+ 
+    index = menu(header, options, INVENTORY_WIDTH)
+ 
+    #if an item was chosen, return it
+    if index is None or len(spells) == 0: return -1
+    return index
 	
 def inventory_menu(header,inventory):
     #show a menu with each item of the inventory as an option

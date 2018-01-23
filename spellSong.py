@@ -23,9 +23,13 @@ troll = spellWord('troll',buildNoun,castNoun)
 strong = spellWord('strong', buildStrong)
 banish = spellWord('banish',buildBanish,castBanish)
 wordList = [strong, banish] 
+banishSpell=spell()
 orcSpell=spell()
-buildSpell(wordList,orcSpell)
+orcList=[strong,orc]
+buildSpell(wordList,banishSpell)
+buildSpell(orcList,orcSpell)
 
+spellList=[banishSpell,orcSpell]
  
 class Object:
 	#this is a generic object: the player, a monster, an item, the stairs...
@@ -155,11 +159,13 @@ def handle_keys(key,objects,player,inventory,game_state):
 			
 			#cast a spell
 			if key_char == 's':
-				player.fighter.casting = 0 #SUPER SKETCH, NEED RE-DO!!
+				player.fighter.casting = -1 #SUPER SKETCH, NEED RE-DO!!
 				targetList=monsters_in_range(BASE_CAST_RANGE,player,fov_map)
 				message('Casting!')
-				player.fighter.spellBook[player.fighter.casting].cast(player,targetList,game_msgs,ctx)
-				return 'took_turn'
+				player.fighter.casting=spell_menu('Press the key next to an spell to cast it, or any other to cancel.\n',player.fighter.spellBook)
+				if(player.fighter.casting != -1):
+					player.fighter.spellBook[player.fighter.casting].cast(player,targetList,game_msgs,ctx)
+					return 'took_turn'
 						
 			
 			#be quiet (don't cast)
@@ -473,7 +479,7 @@ def new_game():
 	player = Object(0, 0, '@', 'player', libtcod.white, blocks=True, fighter=fighter_component)
 	
 	#INIT PLAYER SPELLBOOK - THIS IS THE EASY WAY, MUST BE CHANGED LATER
-	player.fighter.spellBook.append(orcSpell)
+	player.fighter.spellBook = spellList
 	
 	#generate map (at this point it's not drawn to the screen)
 	make_map()
