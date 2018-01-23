@@ -13,7 +13,7 @@ Arrow keys to move
 - g - get item (move over an item, type g)
 - c - Battlecry: start shouting your battlecry.  When the game starts, this gives you a +1 to attack and your target a -1 to defense
 - x - stop your battlecry (NOTE: this has changed since the original version)
-- s - cast spells
+- s - cast spells.  Open the spell menu and choose which spell.  Works like inventory
 - q - be "quiet" - for spells that are active continuously, this turns them off
 - esc - leave the game
 - Mouse - context dependent.  Hovering mouse over something names it, mouse is also used to target some spell scrolls.
@@ -26,7 +26,7 @@ Battlecry uses Voice at a rate of 2 per turn.  You regenerate at a rate of 1 per
 
 ## How spells currently work
 
-At the moment, the spell mechanic is a bit clumsy.  The spells can only be built in code, and the player can have only one spell per game.  Lines 20-27 demonstrate how to build a spell.  There are two types of spell currently implemented - a continuous "noun" spell and a one-shot "environment spell".  There is also a modifier word, "strong", that enhances a spell.
+At the moment, the spell mechanic is a bit clumsy.  The spells can only be built in code. Lines 20-27 demonstrate how to build a spell.  There are two types of spell currently implemented - a continuous "noun" spell and a one-shot "environment spell".  There is also a modifier word, "strong", that enhances a spell.
 
 ### How "strong" works
 
