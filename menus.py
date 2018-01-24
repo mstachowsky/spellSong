@@ -2,6 +2,7 @@
 
 from gameConsts import *
 import libtcodpy as libtcod #honestly just for random
+from rogueIO import *
 
 def menu(header, options, width):
     if len(options) > 26: raise ValueError('Cannot have a menu with more than 26 options.')
@@ -49,12 +50,39 @@ def menu(header, options, width):
 def msgbox(text, width=50):
     menu(text, [], width)  #use menu() as a sort of "message box"
 
+#Currently doesn't allow for deleting words...
+def spell_building_menu(header,dictionary):
+	#show a menu with each item of the inventory as an option
+    if len(dictionary) == 0:
+        options = ['You don\'t know any Spell Words']
+    else:
+		options = []
+		for wrd in dictionary:
+			options.append(wrd)
+		options.append('done')
+    spellList = []
+    index = menu(header, options, INVENTORY_WIDTH)
+    newStr = options[index]
+    oldHeader=header
+    while(options[index] != 'done'):
+		header=oldHeader + 'The spell currently is: \n'
+		header += newStr
+		spellList.append(options[index])
+		index = menu(header, options, INVENTORY_WIDTH)
+		newStr += options[index]
+		
+    if spellList: #if it isn't empty
+		return spellList
+    return None
+	
 def spell_menu(header,spells):
     #show a menu with each item of the inventory as an option
     if len(spells) == 0:
         options = ['You don\'t know any spells']
     else:
-        options = [spl.name for spl in spells]
+		options = []
+		for spl in spells:
+			options.append(spl.name + ', cost: ' + str(spl.cost))
  
     index = menu(header, options, INVENTORY_WIDTH)
  

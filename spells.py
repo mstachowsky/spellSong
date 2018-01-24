@@ -34,7 +34,15 @@ class spell:
 		else:
 			messagePrinter('Your voice is not strong enough to cast that spell',game_msgs)
 			player.fighter.casting=-1 #stop casting
-		
+			
+	#wordsInSpell = a list of strings, wordList = a list of spellWord objects
+	def buildFromWordList(self,wordsInSpell,wordList):
+		spellList = []
+		for wrd in wordsInSpell:
+			for spWord in wordList:
+				if (wrd == spWord.word):
+					spellList.append(spWord)
+		buildSpell(spellList,self)
 #This class is for individual words, that get put together into a spell word list (sentence...) to build a spell
 #The updateFunction is what is called to update the spell object itself 
 class spellWord:
@@ -42,7 +50,7 @@ class spellWord:
 		self.word = word
 		self.updateFunction=updateFunction
 		self.castFunction=castFunction
-		
+	
 #the actual spell building function - this needs to be MUCH more complex!!
 #wordList is a list of spellWords, spell is the spell we are buildings
 def buildSpell(wordList,spell):
@@ -65,7 +73,6 @@ def buildNoun(word,spell): #should work for any generic Noun
 	if spell.useFunction==None:
 		spell.useFunction=word.castFunction
 		
-
 #Casting functions.  Note: these always have to have the same arguments, so we need to be careful
 #before defining too many spells about how this will work, let's do it generically.  Also note: this currently doesn't allow for buffs!
 def castNoun(spell,targetList,game_msgs,context=None,player=None):

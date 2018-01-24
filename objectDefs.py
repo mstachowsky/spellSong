@@ -20,6 +20,7 @@ class Fighter:
         self.conquests=[] #the array of conquests
         self.spellBook=[] #the "book of spells" (a list of spells...)
         self.casting=-1 #this variable is used to determine which spell is currently being cast.  It goes back to -1 when nothing is being cast, and is otherwise the index of the spell being cast in the spellbook
+        self.dictionary=[] #the dictionary of words that the player knows
  
     def attack(self, target,game_msgs):
         #a simple formula for attack damage

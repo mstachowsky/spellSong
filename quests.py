@@ -36,18 +36,23 @@ class subQuest:
 #Utility
 class questBenefits:
 	#perhaps getting a potion here?
-	def __init__(self,Voice,Name):
+	def __init__(self,Voice,Name,newWords):
 		self.Voice=Voice
 		self.Name=Name
+		self.newWords=newWords
 	
 	#TODO: MAKE THIS WAY BETTER
 	def giveBenefits(self,player):
 		player.fighter.maxVoice+=self.Voice
-	
+		for wrd in self.newWords: #get all the words
+			player.fighter.dictionary.append(wrd)
+			
 	def mergeBenefits(self,other):
 		self.Voice += other.Voice
 		self.Name += ', ' + other.Name #this will make weird names
-		
+		for wrd in other.newWords:
+			if wrd not in self.newWords:
+				self.newWords.append(wrd)
 # Quest types		
 class reachLocationQuest:
 	def __init__(self,data,x=None,y=None):

@@ -26,10 +26,19 @@ wordList = [strong, banish]
 banishSpell=spell()
 orcSpell=spell()
 orcList=[strong,orc]
+trollSpell=spell()
+trollList=[strong,strong,troll]
 buildSpell(wordList,banishSpell)
 buildSpell(orcList,orcSpell)
+buildSpell(trollList,trollSpell)
 
-spellList=[banishSpell,orcSpell]
+bigList = [orc,troll,strong,banish]
+casting = ['strong','strong','strong','banish']
+
+trySpell = spell()
+trySpell.buildFromWordList(casting,bigList)
+
+spellList=[trySpell,banishSpell,orcSpell,trollSpell]
  
 class Object:
 	#this is a generic object: the player, a monster, an item, the stairs...
@@ -123,7 +132,10 @@ def handle_keys(key,objects,player,inventory,game_state):
  
 		elif key.vk == libtcod.KEY_RIGHT:
 			fov_recompute = player_move_or_attack(1, 0, player,fov_map,ctx)
-		else:
+		elif key.vk != libtcod.KEY_CHAR:
+			key_char = chr(key.c)
+			return 'didnt-take-turn'
+		elif key.vk == libtcod.KEY_CHAR:
 			#test for other keys
 			key_char = chr(key.c)
 			otherKey=libtcod.Key()
@@ -148,15 +160,13 @@ def handle_keys(key,objects,player,inventory,game_state):
 				if chosen_item is not None:
 					chosen_item.drop()
 				return 'took_turn'
-			
-			#battlecry handling is a hack at the moment
-			if key_char == 'x' and player.fighter.battlecry==1: #stop battlecry
-				stopBattlecry(player,game_msgs)
-			#not shouting does not count as a turn
-			
-			if key_char == 'c' and player.fighter.battlecry==0 and player.fighter.voice>0: #battlecry
-				startBattlecry(player,game_msgs)
-			
+		
+			if key_char == 'c': 
+				if (player.fighter.battlecry==0 and player.fighter.voice>0): #battlecry
+					startBattlecry(player,game_msgs)
+				else:
+					stopBattlecry(player,game_msgs)
+		
 			#cast a spell
 			if key_char == 's':
 				player.fighter.casting = -1 #SUPER SKETCH, NEED RE-DO!!
@@ -166,9 +176,29 @@ def handle_keys(key,objects,player,inventory,game_state):
 				if(player.fighter.casting != -1):
 					player.fighter.spellBook[player.fighter.casting].cast(player,targetList,game_msgs,ctx)
 					return 'took_turn'
-						
 			
-			#be quiet (don't cast)
+			#forget a spell - this counts as a turn.  Anything to do with setting up magic counts as a turn
+			if key_char == 'f':
+				spellInx=spell_menu('Press the key next to an spell to delete it, or any other to cancel.\n',player.fighter.spellBook)
+				if(spellInx != -1):
+					del(player.fighter.spellBook[spellInx])
+					return 'took_turn'
+
+			if key_char == 'w': #write a spell
+				spellList=spell_building_menu('Press the key next to a word to add it to the spell\n',player.fighter.dictionary)
+				if spellList is not None:
+					trySpell = spell()
+					trySpell.buildFromWordList(spellList,bigList)
+					#only add if it isn't already there
+					isThere=False
+					for sp in player.fighter.spellBook:
+						if(sp.name == trySpell.name):
+							isThere = True
+					if not isThere:
+						player.fighter.spellBook.append(trySpell)
+				
+			
+			#be quiet (stop casting a continuous spell)
 			if key_char == 'q':
 				player.fighter.casting=-1
 			#Stopping casting does not count as a turn
@@ -479,7 +509,7 @@ def new_game():
 	player = Object(0, 0, '@', 'player', libtcod.white, blocks=True, fighter=fighter_component)
 	
 	#INIT PLAYER SPELLBOOK - THIS IS THE EASY WAY, MUST BE CHANGED LATER
-	player.fighter.spellBook = spellList
+	player.fighter.spellBook = []#spellList
 	
 	#generate map (at this point it's not drawn to the screen)
 	make_map()
@@ -518,16 +548,17 @@ def play_game():
 	questList=[]
 
 	#Make me a new quest.  Very clearly not how we're going to do this for real
-	benefits=questBenefits(1,'Non')
+	newWords=['troll']
+	benefits=questBenefits(1,'Non',newWords)
 	qData = [player, map, objects, inventory,game_msgs] 
-	locQuest=reachLocationQuest(qData,player.x+1,player.y)
-	
+	locQuest=reachLocationQuest(qData)
+	#locQuest.randomizeLocation(qData)
 	#This first quest is a "find the ring and escape" quest, hard-coded.  So we need to randomly place the escape and the ring
 	item_component = Item()
  
-	item = Object(player.x, player.y+1, '*', 'Ring', libtcod.violet, item=item_component)
-	itQuest=obtainItemQuest(item,qData,player.x,player.y+1)
-	#locQuest.randomizeItemLocation(map,item,objects)
+	item = Object(player.x+1, player.y, '*', 'Ring', libtcod.violet, item=item_component)
+	itQuest=obtainItemQuest(item,qData)
+	#itQuest.randomizeItemLocation(qData)
 	
 	quest1=subQuest(benefits,locQuest)
 	quest2=subQuest(benefits,itQuest)
@@ -536,9 +567,9 @@ def play_game():
 	mainQuest.addQuest(quest1)
 	mainQuest.addQuest(quest2)
 	questList.append(mainQuest)
-	#questList.append(quest1)
-	#questList.append(quest2)
 	
+	#make the player's dictionary for testing
+	player.fighter.dictionary = ['strong','banish','orc']
 	
 	while not libtcod.console_is_window_closed():
 		#render the screen
