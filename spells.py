@@ -3,6 +3,7 @@ from gameConsts import *
 from rogueIO import *
 import libtcodpy as libtcod #honestly just for random
 from targetting import *
+
 #utility functions used by everything
 def decreaseStat(target, spell): #used by stat decreasing spells
 	x = libtcod.random_get_int(0,0,1)
@@ -28,8 +29,14 @@ class spell:
 		#Basically, data itself is a scratchpad that gets modified for every word.  castingData might get over-written as the spell is being built, but it contains data that is used to determine the target etc. of the spell once it's cast, so it is relevant beyond the building stage
 		
 	def cast(self,player,targetList,game_msgs,context):
+		
 		if player.fighter.voice >= self.cost:
-			self.useFunction(self,targetList,game_msgs,context)
+			if self.useFunction is None:
+				messagePrinter('Those words don\'t make a valid spell!',game_msgs)
+				player.fighter.casting=-1 #stop casting a useless spell
+			else:
+				self.useFunction(self,targetList,game_msgs,context)
+			#No matter what, cost voice and take a turn
 			player.fighter.voice -= self.cost
 		else:
 			messagePrinter('Your voice is not strong enough to cast that spell',game_msgs)
@@ -129,6 +136,8 @@ def castBanish(spell,targetList,game_msgs,context):
 	
 	maxDist = BANISH_MULTIPLIER*spell.effectMultiplier
 	
+	#TODO: handle the fact that the spell might be enhanced by nouns
+	#ex: "banish orc" should increase the range but affect orcs only
 	#here we should re-render the map so we can see where to put them
 	
 	
@@ -154,3 +163,17 @@ def castBanish(spell,targetList,game_msgs,context):
 			return 'No target'
 	else:
 		return 'No target'
+		
+
+#Spells are global objects, as there are only so many of them
+orc = spellWord('orc',buildNoun,castNoun)
+troll = spellWord('troll',buildNoun,castNoun)
+strong = spellWord('strong', buildStrong)
+banish = spellWord('banish',buildBanish,castBanish)
+wordList = [strong, banish] 
+banishSpell=spell()
+orcSpell=spell()
+trollSpell=spell()
+orcList=[strong,orc]
+bigList = [orc,troll,strong,banish]
+casting = ['strong','strong','strong','banish']

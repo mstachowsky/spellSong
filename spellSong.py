@@ -15,30 +15,7 @@ from gamePrimitives import *
 from renderUtilities import *
 from targetting import *
 from quests import *
-
-
-#build a spell (needs to be WAY better)
-orc = spellWord('orc',buildNoun,castNoun)
-troll = spellWord('troll',buildNoun,castNoun)
-strong = spellWord('strong', buildStrong)
-banish = spellWord('banish',buildBanish,castBanish)
-wordList = [strong, banish] 
-banishSpell=spell()
-orcSpell=spell()
-orcList=[strong,orc]
-trollSpell=spell()
-trollList=[strong,strong,troll]
-buildSpell(wordList,banishSpell)
-buildSpell(orcList,orcSpell)
-buildSpell(trollList,trollSpell)
-
-bigList = [orc,troll,strong,banish]
-casting = ['strong','strong','strong','banish']
-
-trySpell = spell()
-trySpell.buildFromWordList(casting,bigList)
-
-spellList=[trySpell,banishSpell,orcSpell,trollSpell]
+from equipment import *
  
 class Object:
 	#this is a generic object: the player, a monster, an item, the stairs...
@@ -206,8 +183,9 @@ def handle_keys(key,objects,player,inventory,game_state):
 			
 class Item:
 	#an item that can be picked up and used.
-	def __init__(self, use_function=None):
+	def __init__(self, use_function=None,equippable=False):
 		self.use_function = use_function
+		self.equippable=equippable
  
 	def pick_up(self):
 		#add to the player's inventory and remove from the map
@@ -231,8 +209,11 @@ class Item:
 		if self.use_function is None:
 			message('The ' + self.owner.name + ' cannot be used.')
 		else:
-			if self.use_function() != 'cancelled':
-				inventory.remove(self.owner)  #destroy after use, unless it was cancelled for some reason
+			if self.equippable==False:
+				if self.use_function() != 'cancelled':
+					inventory.remove(self.owner)  #destroy after use, unless it was cancelled for some reason
+			else:
+				self.use_function(player,game_msgs) #we are equipping it
  
 def is_blocked(x, y):
 	#first test the map tile
@@ -352,14 +333,14 @@ def place_objects(room):
 		if not is_blocked(x, y):
 			if libtcod.random_get_int(0, 0, 100) < 80:  #80% chance of getting an orc
 				#create an orc
-				fighter_component = Fighter(hp=10, defense=0, power=3, death_function=monster_death)
+				fighter_component = Fighter(hp=10, defense=0, power=3, powerDice = 1, death_function=monster_death)
 				ai_component = BasicMonster()
  
 				monster = Object(x, y, 'o', 'orc', libtcod.desaturated_green,
 					blocks=True, fighter=fighter_component, ai=ai_component)
 			else:
 				#create a troll
-				fighter_component = Fighter(hp=16, defense=1, power=4, death_function=monster_death)
+				fighter_component = Fighter(hp=16, defense=1, power=4, powerDice=1, death_function=monster_death)
 				ai_component = BasicMonster()
  
 				monster = Object(x, y, 'T', 'troll', libtcod.darker_green,
@@ -505,12 +486,12 @@ def new_game():
 	global player, inventory, game_msgs, game_state
  
 	#create object representing the player
-	fighter_component = Fighter(hp=30, defense=2, power=5, voice=10, death_function=player_death)
+	fighter_component = Fighter(hp=30, defense=2, power=PLAYER_DAMAGE_BASE, powerDice=1, voice=10, death_function=player_death)
 	player = Object(0, 0, '@', 'player', libtcod.white, blocks=True, fighter=fighter_component)
 	
 	#INIT PLAYER SPELLBOOK - THIS IS THE EASY WAY, MUST BE CHANGED LATER
 	player.fighter.spellBook = []#spellList
-	
+		
 	#generate map (at this point it's not drawn to the screen)
 	make_map()
 
@@ -518,8 +499,6 @@ def new_game():
  
 	game_state = 'playing'
 	inventory = []
- 
-
  
 	#a warm welcoming message!
 	message('Welcome stranger! Prepare to perish in the Tombs of the Ancient Kings.', libtcod.red)
@@ -570,6 +549,14 @@ def play_game():
 	
 	#make the player's dictionary for testing
 	player.fighter.dictionary = ['strong','banish','orc']
+
+	#make up some weapons - there are only so many weapons, so they are all global constants.  This will be moved away once we get Item moved
+	daggerStats=equipStats(8,0,0)
+	daggerItem_component = Item()
+	daggerItem = Object(player.x+2, player.y, ')', 'Dagger', libtcod.violet, item=daggerItem_component)
+	dagger=weapon(daggerItem,1,daggerStats)
+		
+	inventory.append(dagger.weaponObject)
 	
 	while not libtcod.console_is_window_closed():
 		#render the screen
@@ -639,3 +626,4 @@ libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, 'python/libtcod tutorial'
 libtcod.sys_set_fps(LIMIT_FPS)
 
 main_menu()
+
